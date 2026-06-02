@@ -47,6 +47,66 @@
   }
   .screen.active { display: flex; }
 
+  /* 참여자 정보 입력 */
+  .p-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    padding: 0 8px;
+  }
+  .p-title {
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .p-desc {
+    font-size: 16px;
+    color: var(--ink-60);
+    text-align: center;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .p-input {
+    width: 100%;
+    max-width: 320px;
+    height: 56px;
+    padding: 0 18px;
+    font-size: 18px;
+    font-family: inherit;
+    border: 1.5px solid #d0d0d0;
+    border-radius: 14px;
+    text-align: center;
+    background: #fafafa;
+    color: var(--ink);
+    transition: border-color .15s, background .15s;
+  }
+  .p-input:focus {
+    outline: none;
+    border-color: #000;
+    background: #fff;
+  }
+  .p-btn {
+    width: 100%;
+    max-width: 320px;
+    height: 60px;
+    background: #000;
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: opacity .15s, background .15s;
+  }
+  .p-btn:disabled {
+    background: #c8c8c8;
+    cursor: not-allowed;
+  }
+  .p-btn:not(:disabled):active { opacity: 0.85; }
+
   /* Intro (조건 선택) */
   .intro-btn {
     display: flex;
@@ -225,8 +285,18 @@
 <!-- 메인 실험 앱 -->
 <div class="phone" id="app">
 
+  <!-- 화면 0: 참여자 정보 -->
+  <section class="screen active" id="screen-participant" data-screen="participant">
+    <div class="p-wrap">
+      <h2 class="p-title">실험 참여자 정보</h2>
+      <p class="p-desc">이름 또는 식별 번호를 입력해주세요.</p>
+      <input type="text" id="participantInput" class="p-input" placeholder="예: 홍길동 / P01" maxlength="30" autocomplete="off" />
+      <button class="p-btn" id="participantBtn" disabled>다음</button>
+    </div>
+  </section>
+
   <!-- 화면 1: 조건 선택 (iPhone 17-7) -->
-  <section class="screen active" id="screen-intro" data-screen="intro">
+  <section class="screen" id="screen-intro" data-screen="intro">
     <button class="intro-btn" data-cond="high">신중하게 선택하기</button>
     <button class="intro-btn" data-cond="low">가볍게 선택하기</button>
   </section>
@@ -291,6 +361,7 @@
     <thead>
       <tr>
         <th>#</th>
+        <th>참여자</th>
         <th>세션 ID</th>
         <th>조건</th>
         <th>선택</th>
@@ -334,6 +405,7 @@
     sessionId: 's-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
     startedAt: new Date().toISOString(),
     userAgent: navigator.userAgent,
+    participantName: null,     // 참여자 이름/식별번호
     condition: null,           // 'high' | 'low'
     forcedCondition: params.get('cond') || null, // ?cond=high|low 로 강제 가능
     choice: null,              // 'A' | 'B'
@@ -392,6 +464,23 @@
   }
 
   // ── 흐름 ───────────────────────────────────
+  // 0. 참여자 정보 입력
+  const participantInput = document.getElementById('participantInput');
+  const participantBtn = document.getElementById('participantBtn');
+  participantInput.addEventListener('input', () => {
+    participantBtn.disabled = !participantInput.value.trim();
+  });
+  participantInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !participantBtn.disabled) participantBtn.click();
+  });
+  participantBtn.addEventListener('click', () => {
+    const name = participantInput.value.trim();
+    if (!name) return;
+    session.participantName = name;
+    persist();
+    showScreen('intro');
+  });
+
   // 1. 조건 선택
   document.querySelectorAll('.intro-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -448,7 +537,7 @@
   });
 
   // 초기 화면 진입 시각 세팅
-  currentScreen = 'intro';
+  currentScreen = 'participant';
   screenEntryAt = performance.now();
 
   // ── 관리자 페이지 ─────────────────────────
@@ -459,6 +548,7 @@
     tbody.innerHTML = all.map((s, i) => `
       <tr>
         <td>${i + 1}</td>
+        <td>${s.participantName || '-'}</td>
         <td>${s.sessionId}</td>
         <td>${s.condition || '-'}</td>
         <td>${s.choice || '-'}</td>
@@ -474,9 +564,9 @@
     `).join('');
 
     document.getElementById('downloadCsv').onclick = () => {
-      const headers = ['sessionId','condition','choice','choiceName','selectDecisionMs','totalMs','intro_ms','start_ms','select_ms','startedAt','finishedAt','userAgent'];
+      const headers = ['participantName','sessionId','condition','choice','choiceName','selectDecisionMs','totalMs','intro_ms','start_ms','select_ms','startedAt','finishedAt','userAgent'];
       const rows = all.map(s => [
-        s.sessionId, s.condition, s.choice, s.choiceName,
+        s.participantName, s.sessionId, s.condition, s.choice, s.choiceName,
         s.selectDecisionMs, s.totalMs,
         Math.round(s.timings?.intro ?? 0),
         Math.round(s.timings?.start ?? 0),
