@@ -111,6 +111,74 @@ function appendRow(sheet, d) {
 }
 
 /**
+ * ==== 깨진 시트 복구 (헤더 중복 / 옛 컬럼 순서로 들어온 행 자동 재정렬) ====
+ *
+ * 1) 헤더를 새 순서로 정확히 복구 (중복 participantName 제거)
+ * 2) 18번째 열 이후 잔여 데이터 클리어
+ * 3) 각 행을 검사해서 옛 순서면 새 순서로 재배치
+ *    - 검사 기준: F열이 'A' 또는 'B' 이면 옛 순서 (옛 F=choice, 새 F=selectDecisionMs 숫자)
+ *
+ * 실행 방법: 편집기 상단 함수 드롭다운에서 'repairData' 선택 → ▶ 실행
+ */
+function repairData() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sheet) throw new Error('Sessions 시트가 없습니다.');
+
+  // 1) 헤더 강제 복구
+  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
+  sheet.setFrozenRows(1);
+
+  // 2) Q열(17열) 이후 잔여물 제거
+  const lastCol = sheet.getLastColumn();
+  if (lastCol > 17) {
+    sheet.getRange(1, 18, sheet.getMaxRows(), lastCol - 17).clearContent();
+  }
+
+  // 3) 각 행 검사 + 재배치
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+
+  const data = sheet.getRange(2, 1, lastRow - 1, 17).getValues();
+
+  // 옛 컬럼 인덱스 (이전 코드 기준):
+  //  0:serverReceivedAt, 1:sessionId, 2:condition, 3:conditionUserClicked,
+  //  4:forcedCondition, 5:choice, 6:choiceName, 7:selectDecisionMs,
+  //  8:totalMs, 9:intro_ms, 10:start_ms, 11:select_ms,
+  // 12:startedAt, 13:finishedAt, 14:userAgent, 15:select_minus_start_ms, 16:participantName
+
+  const fixed = data.map(row => {
+    const fValue = row[5];
+    const isOldFormat = (fValue === 'A' || fValue === 'B');
+
+    if (isOldFormat) {
+      return [
+        row[0],   // A: serverReceivedAt
+        row[1],   // B: sessionId
+        row[16],  // C: participantName (←Q)
+        row[2],   // D: condition (←C)
+        row[6],   // E: choiceName (←G)
+        row[7],   // F: selectDecisionMs (←H)
+        row[3],   // G: conditionUserClicked (←D)
+        row[4],   // H: forcedCondition (←E)
+        row[5],   // I: choice (←F)
+        row[8],   // J: totalMs
+        row[9],   // K: intro_ms
+        row[10],  // L: start_ms
+        row[11],  // M: select_ms
+        row[12],  // N: startedAt
+        row[13],  // O: finishedAt
+        row[14],  // P: userAgent
+        row[15],  // Q: select_minus_start_ms
+      ];
+    }
+    return row; // 이미 새 순서
+  });
+
+  sheet.getRange(2, 1, fixed.length, 17).setValues(fixed);
+}
+
+/**
  * ==== 한 번 실행하는 마이그레이션 ====
  * 기존 시트의 헤더를 인식해서 새 컬럼 순서로 데이터 재배치합니다.
  * - 이전 ARRAYFORMULA / 빈 행 정리
