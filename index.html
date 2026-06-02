@@ -39,9 +39,11 @@
   .screen {
     position: absolute;
     inset: 0;
-    padding: 44px 28px 32px;
+    padding: 44px 28px max(32px, env(safe-area-inset-bottom));
     display: none;
     flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .screen.active { display: flex; }
 
@@ -96,7 +98,7 @@
 
   /* 선택 화면 */
   .select-title {
-    margin-top: 296px;
+    margin-top: auto;
     font-size: 24px;
     font-weight: 700;
     line-height: 1.4;
