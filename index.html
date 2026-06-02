@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>닉네임 고르기 - 사회심리학 실험</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --ink-60: rgba(13, 13, 13, 0.6);
+    --gray: #979797;
+    --card: rgba(188, 188, 188, 0.15);
+    --bg: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    background: #f2f2f2;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: var(--ink);
+    overscroll-behavior: none;
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+  }
+  .phone {
+    width: 100%;
+    max-width: 402px;
+    min-height: 100dvh;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(0,0,0,0.06);
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    padding: 44px 28px 32px;
+    display: none;
+    flex-direction: column;
+  }
+  .screen.active { display: flex; }
+
+  /* Intro (조건 선택) */
+  .intro-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 325px;
+    height: 122px;
+    margin: 0 auto;
+    background: #000;
+    color: #fff;
+    font-size: 32px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .intro-btn:active { opacity: 0.85; }
+  #screen-intro {
+    justify-content: center;
+    gap: 120px;
+  }
+
+  /* START 화면 */
+  .start-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+  }
+  .start-cond {
+    font-size: 14px;
+    color: var(--ink-60);
+    letter-spacing: 1px;
+  }
+  .start-btn {
+    width: 325px;
+    height: 98px;
+    background: #000;
+    color: #fff;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    border: none;
+    cursor: pointer;
+  }
+  .start-btn:active { opacity: 0.85; }
+
+  /* 선택 화면 */
+  .select-title {
+    margin-top: 296px;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  .select-desc {
+    margin-top: 11px;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--ink-60);
+  }
+  .select-desc .em {
+    font-weight: 700;
+    text-decoration: underline;
+  }
+  .options {
+    margin-top: 27px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .option {
+    position: relative;
+    height: 138px;
+    background: var(--card);
+    border-radius: 34.5px;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+    overflow: hidden;
+    transition: transform .1s, background .15s;
+  }
+  .option:active { transform: scale(0.98); background: rgba(188,188,188,0.28); }
+  .option .badge {
+    position: absolute;
+    top: 20px;
+    left: 22px;
+    background: #000;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    line-height: 1.2;
+  }
+  .option .name {
+    position: absolute;
+    left: 24px;
+    top: 64px;
+    font-size: 36px;
+    font-weight: 700;
+    color: #000;
+  }
+  .option .hearts {
+    position: absolute;
+    right: 24px;
+    bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--gray);
+    font-size: 24px;
+    font-weight: 400;
+  }
+  .option .hearts svg { width: 28px; height: 28px; }
+
+  /* 완료 화면 */
+  .done {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    padding: 0 8px;
+  }
+  .done h1 { font-size: 28px; font-weight: 700; }
+  .done p { font-size: 16px; color: var(--ink-60); line-height: 1.5; }
+  .done .session-id {
+    margin-top: 16px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    color: #555;
+    background: #f6f6f6;
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  /* Admin */
+  body.admin { background: #fff; }
+  .admin-page {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px;
+    font-family: ui-sans-serif, system-ui;
+  }
+  .admin-page h1 { font-size: 22px; margin-bottom: 12px; }
+  .admin-page .actions { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .admin-page button {
+    padding: 8px 14px;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .admin-page button:hover { background: #f3f3f3; }
+  .admin-page table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .admin-page th, .admin-page td { border: 1px solid #e5e5e5; padding: 6px 8px; text-align: left; }
+  .admin-page th { background: #fafafa; }
+  .admin-page tbody tr:nth-child(odd) { background: #fcfcfc; }
+
+  @media (max-width: 402px) {
+    .phone { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 메인 실험 앱 -->
+<div class="phone" id="app">
+
+  <!-- 화면 1: 조건 선택 (iPhone 17-7) -->
+  <section class="screen active" id="screen-intro" data-screen="intro">
+    <button class="intro-btn" data-cond="high">신중하게 선택하기</button>
+    <button class="intro-btn" data-cond="low">가볍게 선택하기</button>
+  </section>
+
+  <!-- 화면 2: START (iPhone 17-8 / 17-9) -->
+  <section class="screen" id="screen-start" data-screen="start">
+    <div class="start-wrap">
+      <div class="start-cond" id="startCondLabel"></div>
+      <button class="start-btn" id="startBtn">START</button>
+    </div>
+  </section>
+
+  <!-- 화면 3: 닉네임 선택 (iPhone 17-1..6) -->
+  <section class="screen" id="screen-select" data-screen="select">
+    <h2 class="select-title">온라인 게임에 사용할<br/>닉네임 고르기</h2>
+    <p class="select-desc" id="selectDesc"></p>
+    <div class="options">
+      <button class="option" data-choice="A" data-name="varek">
+        <span class="badge">A</span>
+        <span class="name">varek</span>
+        <span class="hearts">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 21s-7.5-4.6-9.6-9.1C1 9.1 2.7 5.5 6.1 5c2-.3 3.9.7 5 2.3.1-1.5 2-2.5 4-2.3 3.4.5 5.1 4.1 3.6 6.9C19.5 16.4 12 21 12 21z"/>
+          </svg>
+          <span>41</span>
+        </span>
+      </button>
+      <button class="option" data-choice="B" data-name="lirun">
+        <span class="badge">B</span>
+        <span class="name">lirun</span>
+        <span class="hearts">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 21s-7.5-4.6-9.6-9.1C1 9.1 2.7 5.5 6.1 5c2-.3 3.9.7 5 2.3.1-1.5 2-2.5 4-2.3 3.4.5 5.1 4.1 3.6 6.9C19.5 16.4 12 21 12 21z"/>
+          </svg>
+          <span>7</span>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 화면 4: 완료 -->
+  <section class="screen" id="screen-done" data-screen="done">
+    <div class="done">
+      <h1>참여해주셔서 감사합니다.</h1>
+      <p>실험에 도움 주신 것에 감사드립니다.<br/>창을 닫으셔도 됩니다.</p>
+      <div class="session-id" id="sessionIdDisplay"></div>
+    </div>
+  </section>
+
+</div>
+
+<!-- 관리자 페이지 (?admin=1) -->
+<div class="admin-page" id="adminPage" style="display:none">
+  <h1>실험 데이터</h1>
+  <div class="actions">
+    <button id="downloadCsv">CSV 다운로드</button>
+    <button id="copyJson">JSON 복사</button>
+    <button id="clearData">전체 삭제</button>
+    <span id="count" style="align-self:center;font-size:13px;color:#666"></span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>세션 ID</th>
+        <th>조건</th>
+        <th>선택</th>
+        <th>선택 닉네임</th>
+        <th>선택까지 시간(ms)</th>
+        <th>총 체류(ms)</th>
+        <th>intro(ms)</th>
+        <th>start(ms)</th>
+        <th>select(ms)</th>
+        <th>시작 시각</th>
+        <th>UA</th>
+      </tr>
+    </thead>
+    <tbody id="adminRows"></tbody>
+  </table>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ───────── 설정 ─────────
+  // Google Apps Script 웹앱 URL을 붙여넣으세요. 비워두면 localStorage에만 저장됩니다.
+  const WEBHOOK_URL = '';
+  // ────────────────────────
+
+  const STORAGE_KEY = 'socpsy_sessions_v1';
+  const params = new URLSearchParams(location.search);
+
+  // 관리자 모드
+  if (params.get('admin') === '1') {
+    document.body.classList.add('admin');
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('adminPage').style.display = 'block';
+    renderAdmin();
+    return;
+  }
+
+  // ── 세션 상태 ──────────────────────────────
+  const session = {
+    sessionId: 's-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
+    startedAt: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    condition: null,           // 'high' | 'low'
+    forcedCondition: params.get('cond') || null, // ?cond=high|low 로 강제 가능
+    choice: null,              // 'A' | 'B'
+    choiceName: null,          // 'varek' | 'lirun'
+    timings: {},               // 화면별 누적 머문 시간
+    selectEnteredAt: null,     // 선택 화면 진입 시점
+    selectDecisionMs: null,    // 진입 ~ 선택 클릭까지 시간 (핵심 종속변수)
+    finishedAt: null,
+    totalMs: null,
+  };
+
+  let currentScreen = null;
+  let screenEntryAt = null;
+
+  function showScreen(name) {
+    const now = performance.now();
+    if (currentScreen !== null) {
+      session.timings[currentScreen] = (session.timings[currentScreen] || 0) + (now - screenEntryAt);
+    }
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.toggle('active', s.dataset.screen === name);
+    });
+    currentScreen = name;
+    screenEntryAt = now;
+    if (name === 'select') {
+      session.selectEnteredAt = now;
+    }
+  }
+
+  function persist() {
+    try {
+      const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const idx = all.findIndex(s => s.sessionId === session.sessionId);
+      const snapshot = JSON.parse(JSON.stringify(session));
+      if (idx >= 0) all[idx] = snapshot; else all.push(snapshot);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    } catch (e) {
+      console.warn('persist failed', e);
+    }
+  }
+
+  function sendToServer(payload) {
+    if (!WEBHOOK_URL) return Promise.resolve(false);
+    // Apps Script는 'application/json' content-type에 대해 CORS preflight를 일으키므로
+    // text/plain으로 JSON을 보내는 패턴을 사용합니다.
+    return fetch(WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      keepalive: true,
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    }).then(() => true).catch(err => {
+      console.warn('[experiment] send failed, kept in localStorage', err);
+      return false;
+    });
+  }
+
+  // ── 흐름 ───────────────────────────────────
+  // 1. 조건 선택
+  document.querySelectorAll('.intro-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const chosen = btn.dataset.cond;
+      session.condition = session.forcedCondition || chosen;
+      session.conditionUserClicked = chosen;
+      const label = session.condition === 'high' ? '신중하게 선택하기' : '가볍게 선택하기';
+      document.getElementById('startCondLabel').textContent = label;
+      persist();
+      showScreen('start');
+    });
+  });
+
+  // 2. START → 선택 화면
+  document.getElementById('startBtn').addEventListener('click', () => {
+    // 조건에 따라 설명 텍스트 다르게
+    const desc = document.getElementById('selectDesc');
+    if (session.condition === 'high') {
+      desc.innerHTML = '이 닉네임은 해당 게임에서 몇 년 간 계속 쓰일 닉네임입니다. 한번 선택하면 바꿀 수 없습니다. <span class="em">신중하게 선택해주세요</span>.';
+    } else {
+      desc.innerHTML = '언제든 변경이 가능합니다. 어떤 이름이 더 끌리시는지 <span class="em">가볍게 선택해주세요</span>.';
+    }
+    showScreen('select');
+    persist();
+  });
+
+  // 3. 닉네임 선택 (핵심 측정)
+  document.querySelectorAll('.option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const now = performance.now();
+      session.choice = btn.dataset.choice;
+      session.choiceName = btn.dataset.name;
+      session.selectDecisionMs = Math.round(now - session.selectEnteredAt);
+      session.finishedAt = new Date().toISOString();
+      showScreen('done');
+      // showScreen 후 timings 정산
+      const start = new Date(session.startedAt).getTime();
+      session.totalMs = Date.now() - start;
+      // 반올림 정리
+      for (const k of Object.keys(session.timings)) {
+        session.timings[k] = Math.round(session.timings[k]);
+      }
+      document.getElementById('sessionIdDisplay').textContent = session.sessionId;
+      persist();
+      sendToServer(session);
+      console.log('[experiment] session saved', session);
+    });
+  });
+
+  // 페이지 떠날 때도 저장
+  window.addEventListener('pagehide', persist);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') persist();
+  });
+
+  // 초기 화면 진입 시각 세팅
+  currentScreen = 'intro';
+  screenEntryAt = performance.now();
+
+  // ── 관리자 페이지 ─────────────────────────
+  function renderAdmin() {
+    const tbody = document.getElementById('adminRows');
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    document.getElementById('count').textContent = `총 ${all.length}건`;
+    tbody.innerHTML = all.map((s, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${s.sessionId}</td>
+        <td>${s.condition || '-'}</td>
+        <td>${s.choice || '-'}</td>
+        <td>${s.choiceName || '-'}</td>
+        <td>${s.selectDecisionMs ?? '-'}</td>
+        <td>${s.totalMs ?? '-'}</td>
+        <td>${Math.round(s.timings?.intro ?? 0)}</td>
+        <td>${Math.round(s.timings?.start ?? 0)}</td>
+        <td>${Math.round(s.timings?.select ?? 0)}</td>
+        <td>${s.startedAt || '-'}</td>
+        <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(s.userAgent||'').replace(/"/g,'&quot;')}">${s.userAgent || ''}</td>
+      </tr>
+    `).join('');
+
+    document.getElementById('downloadCsv').onclick = () => {
+      const headers = ['sessionId','condition','choice','choiceName','selectDecisionMs','totalMs','intro_ms','start_ms','select_ms','startedAt','finishedAt','userAgent'];
+      const rows = all.map(s => [
+        s.sessionId, s.condition, s.choice, s.choiceName,
+        s.selectDecisionMs, s.totalMs,
+        Math.round(s.timings?.intro ?? 0),
+        Math.round(s.timings?.start ?? 0),
+        Math.round(s.timings?.select ?? 0),
+        s.startedAt, s.finishedAt, s.userAgent
+      ]);
+      const csv = [headers, ...rows].map(r =>
+        r.map(v => {
+          if (v === null || v === undefined) return '';
+          const str = String(v).replace(/"/g, '""');
+          return /[",\n]/.test(str) ? `"${str}"` : str;
+        }).join(',')
+      ).join('\n');
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `experiment_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    document.getElementById('copyJson').onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(all, null, 2));
+        alert('JSON이 클립보드에 복사되었습니다.');
+      } catch {
+        alert('복사 실패. 콘솔에 출력합니다.');
+        console.log(JSON.stringify(all, null, 2));
+      }
+    };
+
+    document.getElementById('clearData').onclick = () => {
+      if (confirm('정말 모든 데이터를 삭제할까요?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        renderAdmin();
+      }
+    };
+  }
+})();
+</script>
+</body>
+</html>
